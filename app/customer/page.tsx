@@ -13,9 +13,9 @@ import { MessageCircle, FileText, Send, Search, Download, Eye, Calendar, ArrowLe
 import { mockFiles } from "@/lib/auth"
 
 interface CustomerPageProps {
-  user: any
-  onLogout: () => void
-  onBack: () => void
+  user?: any
+  onLogout?: () => void
+  onBack?: () => void
 }
 
 const CustomerPage = ({ user, onLogout, onBack }: CustomerPageProps) => {
@@ -37,7 +37,7 @@ const CustomerPage = ({ user, onLogout, onBack }: CustomerPageProps) => {
       sender: "customer",
       message: "I need help with my recent service request.",
       timestamp: new Date(Date.now() - 3000000),
-      avatar: user.avatar,
+      avatar: user?.avatar || "/placeholder.svg",
     },
     {
       id: "3",
@@ -49,7 +49,7 @@ const CustomerPage = ({ user, onLogout, onBack }: CustomerPageProps) => {
   ])
 
   // Get customer's files
-  const customerFiles = mockFiles.filter((file) => file.customerId === user.id)
+  const customerFiles = mockFiles.filter((file) => file.customerId === user?.id)
 
   const handleSendMessage = () => {
     if (chatMessage.trim()) {
@@ -58,7 +58,7 @@ const CustomerPage = ({ user, onLogout, onBack }: CustomerPageProps) => {
         sender: "customer",
         message: chatMessage.trim(),
         timestamp: new Date(),
-        avatar: user.avatar,
+        avatar: user?.avatar || "/placeholder.svg",
       }
       setMessages((prev) => [...prev, newMessage])
       setChatMessage("")
@@ -110,7 +110,7 @@ const CustomerPage = ({ user, onLogout, onBack }: CustomerPageProps) => {
               Notifications
             </Button>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Welcome, {user.name}</span>
+              <span className="text-sm text-muted-foreground">Welcome, {user?.name || "Customer"}</span>
               <Button variant="outline" size="sm" onClick={onLogout} className="bg-transparent">
                 <LogOut className="h-4 w-4 mr-2" />
                 Logout
