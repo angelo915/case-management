@@ -4,79 +4,102 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Updated color palette to match professional design brief */
-  --background: oklch(1 0 0); /* #ffffff - Clean background */
-  --foreground: oklch(0.35 0.02 258); /* #475569 - Default text color */
-  --card: oklch(0.98 0.02 195); /* #ecfeff - Background for cards */
-  --card-foreground: oklch(0.25 0.05 195); /* #164e63 - Card headings */
+  /* Updated color palette to match design brief - Blue primary, professional neutrals, urgency system */
+  --background: oklch(1 0 0); /* #ffffff - Clean white background */
+  --foreground: oklch(0.25 0.02 258); /* #374151 - Professional gray text */
+  --card: oklch(0.98 0.01 225); /* #f8fafc - Light card background */
+  --card-foreground: oklch(0.25 0.02 258); /* #374151 - Card text */
   --popover: oklch(1 0 0); /* #ffffff - Popover background */
-  --popover-foreground: oklch(0.35 0.02 258); /* #475569 - Popover text */
-  --primary: oklch(0.25 0.05 195); /* #164e63 - Primary brand color */
-  --primary-foreground: oklch(1 0 0); /* #ffffff - Text on primary */
-  --secondary: oklch(0.65 0.15 165); /* #10b981 - Accent color */
-  --secondary-foreground: oklch(1 0 0); /* #ffffff - Text on secondary */
-  --muted: oklch(0.96 0.01 225); /* #f1f5f9 - Muted backgrounds */
-  --muted-foreground: oklch(0.35 0.02 258); /* #475569 - Muted text */
-  --accent: oklch(0.65 0.15 165); /* #10b981 - Accent highlights */
-  --accent-foreground: oklch(1 0 0); /* #ffffff - Text on accent */
-  --destructive: oklch(0.55 0.2 35); /* #ea580c - Error color */
-  --destructive-foreground: oklch(1 0 0); /* #ffffff - Text on destructive */
-  --border: oklch(0.92 0.01 225); /* #e2e8f0 - Border color */
-  --input: oklch(0.98 0.02 195); /* #ecfeff - Input backgrounds */
-  --ring: oklch(0.65 0.15 165 / 0.5); /* Focus ring with transparency */
-  --chart-1: oklch(0.55 0.15 165); /* #059669 - Chart color 1 */
-  --chart-2: oklch(0.25 0.05 195); /* #164e63 - Chart color 2 */
-  --chart-3: oklch(0.55 0.2 35); /* #ea580c - Chart color 3 */
-  --chart-4: oklch(0.65 0.15 165); /* #10b981 - Chart color 4 */
-  --chart-5: oklch(0.65 0.2 45); /* #f97316 - Chart color 5 */
-  --radius: 0.5rem; /* Consistent border radius */
-  --sidebar: oklch(0.98 0.02 195); /* #ecfeff - Sidebar background */
-  --sidebar-foreground: oklch(0.35 0.02 258); /* #475569 - Sidebar text */
-  --sidebar-primary: oklch(0.25 0.05 195); /* #164e63 - Sidebar primary */
-  --sidebar-primary-foreground: oklch(1 0 0); /* #ffffff - Sidebar primary text */
-  --sidebar-accent: oklch(0.65 0.15 165); /* #10b981 - Sidebar accent */
-  --sidebar-accent-foreground: oklch(1 0 0); /* #ffffff - Sidebar accent text */
-  --sidebar-border: oklch(0.92 0.01 225); /* #e2e8f0 - Sidebar borders */
-  --sidebar-ring: oklch(0.65 0.15 165 / 0.5); /* Sidebar focus ring */
+  --popover-foreground: oklch(0.25 0.02 258); /* #374151 - Popover text */
+  --primary: oklch(0.45 0.15 258); /* #2563eb - Blue-600 primary brand */
+  --primary-foreground: oklch(1 0 0); /* #ffffff - White text on primary */
+  --secondary: oklch(0.55 0.15 165); /* #10b981 - Green for success states */
+  --secondary-foreground: oklch(1 0 0); /* #ffffff - White text on secondary */
+  --muted: oklch(0.96 0.01 225); /* #f1f5f9 - Light gray muted backgrounds */
+  --muted-foreground: oklch(0.45 0.02 258); /* #64748b - Muted text */
+  --accent: oklch(0.5 0.15 258); /* #3b82f6 - Blue-500 accent */
+  --accent-foreground: oklch(1 0 0); /* #ffffff - White text on accent */
+  --destructive: oklch(0.55 0.2 25); /* #ef4444 - Red for critical/overdue */
+  --destructive-foreground: oklch(1 0 0); /* #ffffff - White text on destructive */
+  --border: oklch(0.9 0.01 225); /* #e2e8f0 - Light gray borders */
+  --input: oklch(0.98 0.01 225); /* #f8fafc - Input backgrounds */
+  --ring: oklch(0.5 0.15 258 / 0.5); /* Blue focus ring with transparency */
+
+  /* Added urgency system colors for task management */
+  --urgent-orange: oklch(0.65 0.15 45); /* #f59e0b - Amber-500 for urgent tasks */
+  --urgent-orange-bg: oklch(0.95 0.05 45); /* #fef3c7 - Amber-100 background */
+  --warning-yellow: oklch(0.7 0.15 85); /* #eab308 - Yellow-500 for upcoming deadlines */
+  --warning-yellow-bg: oklch(0.95 0.05 85); /* #fef9c3 - Yellow-100 background */
+  --success-green: oklch(0.55 0.15 165); /* #10b981 - Green-500 for completed */
+  --success-green-bg: oklch(0.95 0.05 165); /* #dcfce7 - Green-100 background */
+  --critical-red: oklch(0.55 0.2 25); /* #ef4444 - Red-500 for overdue */
+  --critical-red-bg: oklch(0.95 0.05 25); /* #fee2e2 - Red-100 background */
+
+  --chart-1: oklch(0.45 0.15 258); /* Blue primary for charts */
+  --chart-2: oklch(0.55 0.15 165); /* Green secondary for charts */
+  --chart-3: oklch(0.65 0.15 45); /* Orange for charts */
+  --chart-4: oklch(0.7 0.15 85); /* Yellow for charts */
+  --chart-5: oklch(0.55 0.2 25); /* Red for charts */
+  --radius: 0.5rem; /* Consistent rounded-lg border radius */
+  --sidebar: oklch(0.98 0.01 225); /* Light sidebar background */
+  --sidebar-foreground: oklch(0.25 0.02 258); /* Dark sidebar text */
+  --sidebar-primary: oklch(0.45 0.15 258); /* Blue sidebar primary */
+  --sidebar-primary-foreground: oklch(1 0 0); /* White sidebar primary text */
+  --sidebar-accent: oklch(0.5 0.15 258); /* Blue sidebar accent */
+  --sidebar-accent-foreground: oklch(1 0 0); /* White sidebar accent text */
+  --sidebar-border: oklch(0.9 0.01 225); /* Light sidebar borders */
+  --sidebar-ring: oklch(0.5 0.15 258 / 0.5); /* Blue sidebar focus ring */
 }
 
 .dark {
-  /* Updated dark mode colors to maintain professional appearance */
+  /* Updated dark mode to maintain professional blue theme */
   --background: oklch(0.08 0.01 225); /* Dark background */
   --foreground: oklch(0.95 0.01 225); /* Light text */
   --card: oklch(0.12 0.01 225); /* Dark card background */
   --card-foreground: oklch(0.95 0.01 225); /* Light card text */
   --popover: oklch(0.08 0.01 225); /* Dark popover */
   --popover-foreground: oklch(0.95 0.01 225); /* Light popover text */
-  --primary: oklch(0.65 0.15 165); /* Brighter primary in dark mode */
+  --primary: oklch(0.5 0.15 258); /* Brighter blue primary in dark mode */
   --primary-foreground: oklch(0.08 0.01 225); /* Dark text on primary */
-  --secondary: oklch(0.25 0.05 195); /* Darker secondary in dark mode */
-  --secondary-foreground: oklch(0.95 0.01 225); /* Light text on secondary */
+  --secondary: oklch(0.6 0.15 165); /* Brighter green in dark mode */
+  --secondary-foreground: oklch(0.08 0.01 225); /* Dark text on secondary */
   --muted: oklch(0.15 0.01 225); /* Dark muted background */
   --muted-foreground: oklch(0.7 0.01 225); /* Lighter muted text */
-  --accent: oklch(0.65 0.15 165); /* Consistent accent */
+  --accent: oklch(0.55 0.15 258); /* Brighter blue accent */
   --accent-foreground: oklch(0.08 0.01 225); /* Dark text on accent */
-  --destructive: oklch(0.6 0.2 35); /* Slightly brighter destructive */
+  --destructive: oklch(0.6 0.2 25); /* Brighter red destructive */
   --destructive-foreground: oklch(0.95 0.01 225); /* Light text on destructive */
   --border: oklch(0.2 0.01 225); /* Dark border */
   --input: oklch(0.15 0.01 225); /* Dark input background */
-  --ring: oklch(0.65 0.15 165 / 0.5); /* Consistent focus ring */
-  --chart-1: oklch(0.6 0.15 165); /* Brighter chart colors */
-  --chart-2: oklch(0.4 0.05 195);
-  --chart-3: oklch(0.6 0.2 35);
-  --chart-4: oklch(0.65 0.15 165);
-  --chart-5: oklch(0.7 0.2 45);
+  --ring: oklch(0.55 0.15 258 / 0.5); /* Blue focus ring */
+
+  /* Dark mode urgency colors */
+  --urgent-orange: oklch(0.7 0.15 45); /* Brighter orange for dark mode */
+  --urgent-orange-bg: oklch(0.2 0.05 45); /* Dark orange background */
+  --warning-yellow: oklch(0.75 0.15 85); /* Brighter yellow for dark mode */
+  --warning-yellow-bg: oklch(0.2 0.05 85); /* Dark yellow background */
+  --success-green: oklch(0.6 0.15 165); /* Brighter green for dark mode */
+  --success-green-bg: oklch(0.2 0.05 165); /* Dark green background */
+  --critical-red: oklch(0.6 0.2 25); /* Brighter red for dark mode */
+  --critical-red-bg: oklch(0.2 0.05 25); /* Dark red background */
+
+  --chart-1: oklch(0.5 0.15 258); /* Brighter chart colors for dark mode */
+  --chart-2: oklch(0.6 0.15 165);
+  --chart-3: oklch(0.7 0.15 45);
+  --chart-4: oklch(0.75 0.15 85);
+  --chart-5: oklch(0.6 0.2 25);
   --sidebar: oklch(0.1 0.01 225); /* Dark sidebar */
   --sidebar-foreground: oklch(0.9 0.01 225); /* Light sidebar text */
-  --sidebar-primary: oklch(0.65 0.15 165); /* Bright sidebar primary */
+  --sidebar-primary: oklch(0.5 0.15 258); /* Blue sidebar primary */
   --sidebar-primary-foreground: oklch(0.08 0.01 225); /* Dark text on sidebar primary */
-  --sidebar-accent: oklch(0.25 0.05 195); /* Dark sidebar accent */
-  --sidebar-accent-foreground: oklch(0.95 0.01 225); /* Light text on sidebar accent */
+  --sidebar-accent: oklch(0.55 0.15 258); /* Blue sidebar accent */
+  --sidebar-accent-foreground: oklch(0.08 0.01 225); /* Dark text on sidebar accent */
   --sidebar-border: oklch(0.2 0.01 225); /* Dark sidebar border */
-  --sidebar-ring: oklch(0.65 0.15 165 / 0.5); /* Consistent sidebar focus ring */
+  --sidebar-ring: oklch(0.55 0.15 258 / 0.5); /* Blue sidebar focus ring */
 }
 
 @theme inline {
+  /* Updated font configuration to use Geist Sans properly */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --color-background: var(--background);
@@ -122,6 +145,53 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans leading-relaxed;
+  }
+
+  /* Added typography hierarchy classes matching design brief */
+  .heading-main {
+    @apply text-2xl font-bold text-foreground;
+  }
+
+  .heading-section {
+    @apply text-lg font-semibold text-foreground;
+  }
+
+  .label-text {
+    @apply text-sm font-medium text-muted-foreground;
+  }
+
+  /* Fixed urgency utility classes by using proper CSS instead of @apply with arbitrary values */
+  .status-urgent {
+    background-color: var(--urgent-orange-bg);
+    color: var(--urgent-orange);
+    border-color: var(--urgent-orange);
+  }
+
+  .status-warning {
+    background-color: var(--warning-yellow-bg);
+    color: var(--warning-yellow);
+    border-color: var(--warning-yellow);
+  }
+
+  .status-success {
+    background-color: var(--success-green-bg);
+    color: var(--success-green);
+    border-color: var(--success-green);
+  }
+
+  .status-critical {
+    background-color: var(--critical-red-bg);
+    color: var(--critical-red);
+    border-color: var(--critical-red);
+  }
+
+  /* Added consistent spacing and layout utilities */
+  .section-spacing {
+    @apply gap-4 p-4;
+  }
+
+  .card-style {
+    @apply bg-card border border-border rounded-lg shadow-sm;
   }
 }
