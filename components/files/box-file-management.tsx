@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { FileUpload } from "@/components/files/file-upload"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Label } from "@/components/ui/label"
 import { FileViewer } from "@/components/files/file-viewer"
 import {
   Search,
@@ -20,6 +21,7 @@ import {
   Eye,
   Download,
   Trash2,
+  Plus,
 } from "lucide-react"
 import { mockCustomers, mockFiles } from "@/lib/auth"
 
@@ -27,6 +29,10 @@ export function BoxFileManagement() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null)
   const [viewingFile, setViewingFile] = useState<any>(null)
+  const [showUploadDialog, setShowUploadDialog] = useState(false)
+  const [uploadCustomerId, setUploadCustomerId] = useState("")
+  const [uploadCustomerSearch, setUploadCustomerSearch] = useState("")
+  const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null)
 
   // Group files by customer (Box Files)
   const boxFiles = mockCustomers.map((customer) => ({
@@ -39,6 +45,12 @@ export function BoxFileManagement() {
     (boxFile) =>
       boxFile.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       boxFile.files.some((file) => file.name.toLowerCase().includes(searchTerm.toLowerCase())),
+  )
+
+  const filteredCustomersForUpload = mockCustomers.filter(
+    (customer) =>
+      customer.name.toLowerCase().includes(uploadCustomerSearch.toLowerCase()) ||
+      customer.email.toLowerCase().includes(uploadCustomerSearch.toLowerCase()),
   )
 
   const formatFileSize = (bytes: number) => {
@@ -56,6 +68,24 @@ export function BoxFileManagement() {
     return <FileText className="h-4 w-4" />
   }
 
+  const handleFileUpload = () => {
+    if (!uploadCustomerId || !selectedFiles) {
+      alert("Please select a customer and files to upload")
+      return
+    }
+
+    const customer = mockCustomers.find((c) => c.id === uploadCustomerId)
+    console.log(`Uploading ${selectedFiles.length} files to ${customer?.name}'s Box File`)
+
+    // Reset form
+    setUploadCustomerId("")
+    setUploadCustomerSearch("")
+    setSelectedFiles(null)
+    setShowUploadDialog(false)
+
+    alert(`Files successfully uploaded to ${customer?.name}'s Box File!`)
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -63,20 +93,10 @@ export function BoxFileManagement() {
           <h2 className="text-2xl font-bold text-card-foreground">Box Files Management</h2>
           <p className="text-muted-foreground">Manage customer document storage</p>
         </div>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button className="bg-primary hover:bg-primary/90">
-              <Upload className="h-4 w-4 mr-2" />
-              Upload Files
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Upload Files to Box File</DialogTitle>
-            </DialogHeader>
-            <FileUpload onUpload={(files) => console.log("Files uploaded:", files)} />
-          </DialogContent>
-        </Dialog>
+        <Button className="bg-primary hover:bg-primary/90" onClick={() => setShowUploadDialog(true)}>
+          <Upload className="h-4 w-4 mr-2" />
+          Upload Files
+        </Button>
       </div>
 
       {/* Search */}
@@ -115,7 +135,12 @@ export function BoxFileManagement() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setUploadCustomerId(boxFile.customer.id)
+                        setShowUploadDialog(true)
+                      }}
+                    >
                       <Upload className="h-4 w-4 mr-2" />
                       Upload Files
                     </DropdownMenuItem>
@@ -170,6 +195,88 @@ export function BoxFileManagement() {
           </Card>
         ))}
       </div>
+
+      <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Upload Files to Box File</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="customer-select">Select Customer Box File</Label>
+              <div className="space-y-2">
+                <Input
+                  placeholder="Search customers..."
+                  value={uploadCustomerSearch}
+                  onChange={(e) => setUploadCustomerSearch(e.target.value)}
+                  className="w-full"
+                />
+                <Select value={uploadCustomerId} onValueChange={setUploadCustomerId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a customer's box file" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredCustomersForUpload.map((customer) => (
+                      <SelectItem key={customer.id} value={customer.id}>
+                        <div className="flex items-center gap-2">
+                          <FolderOpen className="h-4 w-4" />
+                          <div>
+                            <p className="font-medium">{customer.name}</p>
+                            <p className="text-xs text-muted-foreground">{customer.email}</p>
+                          </div>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="file-input">Select Files</Label>
+              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6">
+                <div className="text-center">
+                  <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground mb-2">Drag and drop files here, or click to select</p>
+                  <input
+                    type="file"
+                    multiple
+                    onChange={(e) => setSelectedFiles(e.target.files)}
+                    className="hidden"
+                    id="file-input"
+                  />
+                  <Button variant="outline" onClick={() => document.getElementById("file-input")?.click()}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Choose Files
+                  </Button>
+                </div>
+                {selectedFiles && selectedFiles.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    <p className="text-sm font-medium">Selected Files:</p>
+                    {Array.from(selectedFiles).map((file, index) => (
+                      <div key={index} className="flex items-center gap-2 text-sm">
+                        <FileText className="h-4 w-4" />
+                        <span>{file.name}</span>
+                        <span className="text-muted-foreground">({formatFileSize(file.size)})</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowUploadDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleFileUpload} disabled={!uploadCustomerId || !selectedFiles}>
+                <Upload className="h-4 w-4 mr-2" />
+                Upload Files
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* File Viewer Dialog */}
       {viewingFile && (

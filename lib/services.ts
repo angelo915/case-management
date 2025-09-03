@@ -93,3 +93,19 @@ export const getDaysUntilExpiry = (endDate: string): number => {
   const diffTime = expiry.getTime() - today.getTime()
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 }
+
+export const mockChatMessages = [
+  { id: 1, sender: "support", message: "Hello! How can I help you today?", timestamp: new Date("2024-01-15T10:00:00") },
+  {
+    id: 2,
+    sender: "customer",
+    message: "I have a question about my project status",
+    timestamp: new Date("2024-01-15T10:05:00"),
+  },
+  {
+    id: 3,
+    sender: "support",
+    message: "I'd be happy to help! Which project are you referring to?",
+    timestamp: new Date("2024-01-15T10:06:00"),
+  },
+]

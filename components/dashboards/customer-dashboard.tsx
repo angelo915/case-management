@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { cn } from "@/lib/utils"
 import {
   CheckCircle2,
   DollarSign,
@@ -24,68 +24,36 @@ import {
   Download,
   Eye,
   Folder,
-  ExternalLink,
+  Home,
+  ChevronLeft,
+  ChevronRight,
+  Settings,
 } from "lucide-react"
-import { mockTasks, mockCustomers, mockFiles, type User } from "@/lib/auth"
-import { mockServiceAssignments } from "@/lib/services"
-import Link from "next/link"
+import { mockTasks, mockCustomers, mockFiles, mockNotifications, type User } from "@/lib/auth"
+import { mockServiceAssignments, mockChatMessages } from "@/lib/services"
 
 interface CustomerDashboardProps {
   user: User
   onLogout: () => void
 }
 
-const mockNotifications = [
-  {
-    id: 1,
-    type: "task",
-    title: "Document Submission Required",
-    message: "Please submit your ID documents to our physical branch by Friday",
-    date: new Date("2024-01-15"),
-    urgent: true,
-  },
-  {
-    id: 2,
-    type: "payment",
-    title: "Service Payment Due",
-    message: "Payment of $250 required for Website Development service",
-    date: new Date("2024-01-14"),
-    urgent: false,
-  },
-  {
-    id: 3,
-    type: "balance",
-    title: "Outstanding Balance",
-    message: "You owe $150 after completion of Logo Design service",
-    date: new Date("2024-01-13"),
-    urgent: false,
-  },
-]
-
-const mockChatMessages = [
-  { id: 1, sender: "support", message: "Hello! How can I help you today?", timestamp: new Date("2024-01-15T10:00:00") },
-  {
-    id: 2,
-    sender: "customer",
-    message: "I have a question about my project status",
-    timestamp: new Date("2024-01-15T10:05:00"),
-  },
-  {
-    id: 3,
-    sender: "support",
-    message: "I'd be happy to help! Which project are you referring to?",
-    timestamp: new Date("2024-01-15T10:06:00"),
-  },
-]
-
 export function CustomerDashboard({ user, onLogout }: CustomerDashboardProps) {
   const [activeTab, setActiveTab] = useState("overview")
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   const [chatMessage, setChatMessage] = useState("")
   const [chatMessages, setChatMessages] = useState(mockChatMessages)
   const [searchTerm, setSearchTerm] = useState("")
 
-  // Find customer data (in real app, this would be based on user.customerId)
+  const navigationItems = [
+    { id: "overview", label: "Overview", icon: Home },
+    { id: "services", label: "My Services", icon: Building },
+    { id: "tasks", label: "Project Status", icon: CheckCircle2 },
+    { id: "files", label: "Box Files", icon: Folder },
+    { id: "chat", label: "Chat Support", icon: MessageSquare },
+    { id: "notifications", label: "Notifications", icon: Bell },
+  ]
+
   const customer = mockCustomers[0] // Mock: assume first customer
   const customerTasks = mockTasks.filter((task) => task.customerId === customer.id)
   const customerServices = mockServiceAssignments.filter((service) => service.customerId === customer.id)
@@ -109,7 +77,6 @@ export function CustomerDashboard({ user, onLogout }: CustomerDashboardProps) {
         },
       ])
       setChatMessage("")
-      // Simulate support response
       setTimeout(() => {
         setChatMessages((prev) => [
           ...prev,
@@ -131,207 +98,310 @@ export function CustomerDashboard({ user, onLogout }: CustomerDashboardProps) {
   )
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card">
-        <div className="flex items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold text-card-foreground">Customer Portal</h1>
-            <Badge variant="outline">Customer</Badge>
+    <div className="min-h-screen bg-background flex">
+      <aside
+        className={cn("bg-card border-r transition-all duration-300 flex flex-col", sidebarCollapsed ? "w-16" : "w-64")}
+      >
+        {/* Sidebar Header */}
+        <div className="p-4 border-b">
+          <div className="flex items-center justify-between">
+            {!sidebarCollapsed && (
+              <div>
+                <h2 className="text-lg font-semibold text-card-foreground">Customer Portal</h2>
+                <p className="text-sm text-muted-foreground">Your Dashboard</p>
+              </div>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="h-8 w-8 p-0"
+            >
+              {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            </Button>
           </div>
-          <div className="flex items-center gap-4">
-            <Link href="/customer/notifications">
-              <Button variant="outline" size="sm" className="bg-transparent">
-                <Bell className="h-4 w-4 mr-2" />
-                Notifications
-              </Button>
-            </Link>
+        </div>
 
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Welcome, {customer.name}</span>
-              <Button variant="outline" size="sm" onClick={onLogout} className="bg-transparent">
-                <LogOut className="h-4 w-4 mr-2" />
+        {/* Navigation */}
+        <nav className="flex-1 p-2">
+          <div className="space-y-1">
+            {navigationItems.map((item) => {
+              const Icon = item.icon
+              const hasNotifications = item.id === "notifications" && urgentNotifications > 0
+              return (
+                <Button
+                  key={item.id}
+                  variant={activeTab === item.id ? "secondary" : "ghost"}
+                  className={cn("w-full justify-start gap-3 h-10 relative", sidebarCollapsed && "justify-center px-2")}
+                  onClick={() => setActiveTab(item.id)}
+                >
+                  <Icon className="h-4 w-4 flex-shrink-0" />
+                  {!sidebarCollapsed && <span>{item.label}</span>}
+                  {hasNotifications && (
+                    <span className="absolute top-1 right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                      {urgentNotifications}
+                    </span>
+                  )}
+                </Button>
+              )
+            })}
+          </div>
+        </nav>
+
+        {/* User Section */}
+        <div className="p-4 border-t">
+          <div className={cn("flex items-center gap-3", sidebarCollapsed && "justify-center")}>
+            <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+              <span className="text-sm font-medium text-primary-foreground">{customer.name.charAt(0)}</span>
+            </div>
+            {!sidebarCollapsed && (
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-card-foreground truncate">{customer.name}</p>
+                <p className="text-xs text-muted-foreground">Customer</p>
+              </div>
+            )}
+          </div>
+          {!sidebarCollapsed && (
+            <div className="mt-3 space-y-1">
+              <Button variant="ghost" size="sm" className="w-full justify-start gap-2 h-8">
+                <Settings className="h-3 w-3" />
+                Settings
+              </Button>
+              <Button variant="ghost" size="sm" className="w-full justify-start gap-2 h-8" onClick={onLogout}>
+                <LogOut className="h-3 w-3" />
                 Logout
               </Button>
             </div>
-          </div>
+          )}
         </div>
-      </header>
+      </aside>
 
-      <div className="p-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="services">My Services</TabsTrigger>
-            <TabsTrigger value="tasks">Project Status</TabsTrigger>
-            <TabsTrigger value="files">Box Files</TabsTrigger>
-            <TabsTrigger value="chat">Chat Support</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="overview" className="space-y-6">
-            {/* Account Summary */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Active Services</CardTitle>
-                  <Building className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-primary">{customerServices.length}</div>
-                  <p className="text-xs text-muted-foreground">Currently subscribed</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
-                  <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-secondary">{activeTasks.length}</div>
-                  <p className="text-xs text-muted-foreground">In progress</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Prepayment Balance</CardTitle>
-                  <DollarSign className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-secondary">${customer.prepaymentBalance.toFixed(2)}</div>
-                  <p className="text-xs text-muted-foreground">Available credit</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Box Files</CardTitle>
-                  <Folder className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-orange-600">{customerFiles.length}</div>
-                  <p className="text-xs text-muted-foreground">Total documents</p>
-                </CardContent>
-              </Card>
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col">
+        <header className="border-b bg-card">
+          <div className="flex items-center justify-between px-6 py-4">
+            <div className="flex items-center gap-4">
+              <h1 className="text-2xl font-bold text-card-foreground">
+                {navigationItems.find((item) => item.id === activeTab)?.label || "Dashboard"}
+              </h1>
+              <Badge variant="outline">Customer</Badge>
             </div>
+            <div className="flex items-center gap-4">
+              <Button
+                variant="outline"
+                size="sm"
+                className="bg-transparent relative"
+                onClick={() => setShowNotifications(!showNotifications)}
+              >
+                <Bell className="h-4 w-4 mr-2" />
+                Notifications
+                {urgentNotifications > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {urgentNotifications}
+                  </span>
+                )}
+              </Button>
+            </div>
+          </div>
 
-            {/* Current Projects & Account Info */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Current Projects</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {activeTasks.length > 0 ? (
-                    activeTasks.map((task) => (
-                      <div key={task.id} className="p-4 bg-muted rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-medium">{task.title}</h4>
-                          <Badge className="bg-primary text-primary-foreground">{task.status}</Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground mb-3">{task.description}</p>
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span>Progress</span>
-                            <span>{task.progress}%</span>
-                          </div>
-                          <Progress value={task.progress} className="h-2" />
-                        </div>
-                        <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            Due: {new Date(task.dueDate).toLocaleDateString()}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <CheckCircle2 className="h-3 w-3" />
-                            {task.subtasks.filter((st) => st.completed).length}/{task.subtasks.length} subtasks
-                          </span>
-                        </div>
+          {showNotifications && (
+            <div className="absolute right-6 top-16 w-80 bg-card border rounded-lg shadow-lg z-50">
+              <div className="p-4 border-b">
+                <h3 className="font-semibold">Notifications</h3>
+              </div>
+              <div className="max-h-96 overflow-y-auto">
+                {mockNotifications.map((notification) => (
+                  <div
+                    key={notification.id}
+                    className={`p-4 border-b hover:bg-muted ${notification.urgent ? "bg-red-50 border-l-4 border-l-red-500" : ""}`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-medium text-sm">{notification.title}</p>
+                        <p className="text-sm text-muted-foreground">{notification.message}</p>
                       </div>
-                    ))
-                  ) : (
-                    <p className="text-center text-muted-foreground py-8">No active projects</p>
-                  )}
-                </CardContent>
-              </Card>
+                      <span className="text-xs text-muted-foreground">
+                        {notification.date ? new Date(notification.date).toLocaleDateString() : "No date"}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </header>
+
+        {/* Content Area */}
+        <div className="flex-1 p-6 overflow-auto">
+          {activeTab === "overview" && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Active Services</CardTitle>
+                    <Building className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-primary">{customerServices.length}</div>
+                    <p className="text-xs text-muted-foreground">Currently subscribed</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
+                    <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-secondary">{activeTasks.length}</div>
+                    <p className="text-xs text-muted-foreground">In progress</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Prepayment Balance</CardTitle>
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-secondary">${customer.prepaymentBalance.toFixed(2)}</div>
+                    <p className="text-xs text-muted-foreground">Available credit</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Box Files</CardTitle>
+                    <Folder className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-orange-600">{customerFiles.length}</div>
+                    <p className="text-xs text-muted-foreground">Total documents</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Current Projects</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {activeTasks.length > 0 ? (
+                      activeTasks.map((task) => (
+                        <div key={task.id} className="p-4 bg-muted rounded-lg">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="font-medium">{task.title}</h4>
+                            <Badge className="bg-primary text-primary-foreground">{task.status}</Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-3">{task.description}</p>
+                          <div className="space-y-2">
+                            <div className="flex justify-between text-sm">
+                              <span>Progress</span>
+                              <span>{task.progress}%</span>
+                            </div>
+                            <Progress value={task.progress} className="h-2" />
+                          </div>
+                          <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              Due: {new Date(task.dueDate).toLocaleDateString()}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <CheckCircle2 className="h-3 w-3" />
+                              {task.subtasks.filter((st) => st.completed).length}/{task.subtasks.length} subtasks
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-center text-muted-foreground py-8">No active projects</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Account Information</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm font-medium">Customer Since</p>
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(customer.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">Account Status</p>
+                        <Badge variant={customer.status === "active" ? "default" : "secondary"}>
+                          {customer.status}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-medium">Contact Information</p>
+                      <p className="text-sm text-muted-foreground">{customer.email}</p>
+                      <p className="text-sm text-muted-foreground">{customer.phone}</p>
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-medium">Billing Address</p>
+                      <p className="text-sm text-muted-foreground">{customer.address}</p>
+                    </div>
+
+                    <div className="pt-4">
+                      <Button className="w-full">
+                        <CreditCard className="h-4 w-4 mr-2" />
+                        Add Prepayment
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Account Information</CardTitle>
+                  <CardTitle>Quick Actions</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm font-medium">Customer Since</p>
-                      <p className="text-sm text-muted-foreground">
-                        {new Date(customer.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Account Status</p>
-                      <Badge variant={customer.status === "active" ? "default" : "secondary"}>{customer.status}</Badge>
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-sm font-medium">Contact Information</p>
-                    <p className="text-sm text-muted-foreground">{customer.email}</p>
-                    <p className="text-sm text-muted-foreground">{customer.phone}</p>
-                  </div>
-
-                  <div>
-                    <p className="text-sm font-medium">Billing Address</p>
-                    <p className="text-sm text-muted-foreground">{customer.address}</p>
-                  </div>
-
-                  <div className="pt-4">
-                    <Button className="w-full">
-                      <CreditCard className="h-4 w-4 mr-2" />
-                      Add Prepayment
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <Button className="h-16 flex flex-col gap-1" onClick={() => setActiveTab("tasks")}>
+                      <CheckCircle2 className="h-5 w-5" />
+                      <span className="text-sm">View Projects</span>
                     </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <Button className="h-16 flex flex-col gap-1" onClick={() => setActiveTab("tasks")}>
-                    <CheckCircle2 className="h-5 w-5" />
-                    <span className="text-sm">View Projects</span>
-                  </Button>
-                  <Link href="/customer/chat" className="w-full">
-                    <Button variant="outline" className="h-16 flex flex-col gap-1 bg-transparent w-full">
+                    <Button
+                      variant="outline"
+                      className="h-16 flex flex-col gap-1 bg-transparent"
+                      onClick={() => setActiveTab("chat")}
+                    >
                       <MessageSquare className="h-5 w-5" />
                       <span className="text-sm">Chat Support</span>
-                      <ExternalLink className="h-3 w-3" />
                     </Button>
-                  </Link>
-                  <Link href="/customer/box-file" className="w-full">
-                    <Button variant="outline" className="h-16 flex flex-col gap-1 bg-transparent w-full">
+                    <Button
+                      variant="outline"
+                      className="h-16 flex flex-col gap-1 bg-transparent"
+                      onClick={() => setActiveTab("files")}
+                    >
                       <FileText className="h-5 w-5" />
                       <span className="text-sm">My Box File</span>
-                      <ExternalLink className="h-3 w-3" />
                     </Button>
-                  </Link>
-                  <Link href="/customer/notifications" className="w-full">
-                    <Button variant="outline" className="h-16 flex flex-col gap-1 bg-transparent w-full">
+                    <Button
+                      variant="outline"
+                      className="h-16 flex flex-col gap-1 bg-transparent"
+                      onClick={() => setActiveTab("notifications")}
+                    >
                       <Bell className="h-5 w-5" />
                       <span className="text-sm">Notifications</span>
-                      <ExternalLink className="h-3 w-3" />
                     </Button>
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
-          <TabsContent value="services">
+          {activeTab === "services" && (
             <Card>
               <CardHeader>
                 <CardTitle>My Services</CardTitle>
@@ -352,9 +422,9 @@ export function CustomerDashboard({ user, onLogout }: CustomerDashboardProps) {
                 ))}
               </CardContent>
             </Card>
-          </TabsContent>
+          )}
 
-          <TabsContent value="tasks">
+          {activeTab === "tasks" && (
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <Card>
@@ -430,9 +500,9 @@ export function CustomerDashboard({ user, onLogout }: CustomerDashboardProps) {
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>
+          )}
 
-          <TabsContent value="files">
+          {activeTab === "files" && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -489,9 +559,9 @@ export function CustomerDashboard({ user, onLogout }: CustomerDashboardProps) {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+          )}
 
-          <TabsContent value="chat">
+          {activeTab === "chat" && (
             <Card className="h-[600px] flex flex-col">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -545,8 +615,54 @@ export function CustomerDashboard({ user, onLogout }: CustomerDashboardProps) {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
+          )}
+
+          {activeTab === "notifications" && (
+            <Card>
+              <CardHeader>
+                <CardTitle>All Notifications</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {mockNotifications.map((notification) => (
+                    <div
+                      key={notification.id}
+                      className={`p-4 rounded-lg border ${notification.urgent ? "bg-red-50 border-red-200" : "bg-muted"}`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-medium">{notification.title}</h4>
+                          <p className="text-sm text-muted-foreground mt-1">{notification.message}</p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Badge
+                              variant={
+                                notification.type === "task"
+                                  ? "default"
+                                  : notification.type === "payment"
+                                    ? "destructive"
+                                    : "secondary"
+                              }
+                            >
+                              {notification.type}
+                            </Badge>
+                            {notification.urgent && (
+                              <Badge variant="destructive" className="text-xs">
+                                Urgent
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {notification.date ? new Date(notification.date).toLocaleDateString() : "No date"}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
     </div>
   )

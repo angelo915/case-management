@@ -5,14 +5,35 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import { FileManagement } from "@/components/files/file-management"
-import { CheckCircle2, Clock, AlertTriangle, FileText, LogOut, Bell, Calendar } from "lucide-react"
-import { mockTasks } from "@/lib/auth"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { FileUpload } from "@/components/files/file-upload"
+import { FileViewer } from "@/components/files/file-viewer"
+import {
+  CheckCircle2,
+  Clock,
+  AlertTriangle,
+  FileText,
+  LogOut,
+  Bell,
+  Calendar,
+  Search,
+  FolderOpen,
+  ImageIcon,
+  Archive,
+  MoreVertical,
+  Upload,
+  Eye,
+  Download,
+  Menu,
+  Home,
+  Folder,
+} from "lucide-react"
+import { mockTasks, mockCustomers, mockFiles } from "@/lib/auth"
 import type { User as AuthUser } from "@/lib/auth"
 import type { File } from "@/components/files/file-management"
 
@@ -27,6 +48,11 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
   const [showNotifications, setShowNotifications] = useState(false)
   const [additionalCosts, setAdditionalCosts] = useState<{ [key: string]: { amount: number; comment: string } }>({})
   const [proofOfWork, setProofOfWork] = useState<{ [key: string]: File[] }>({})
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null)
+  const [viewingFile, setViewingFile] = useState<any>(null)
+  const [selectedBoxFile, setSelectedBoxFile] = useState("")
 
   const myTasks = mockTasks.filter((task) => task.assignedTo === user.id)
   const pendingTasks = myTasks.filter((task) => task.status === "pending")
@@ -40,6 +66,21 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
   })
 
   const urgentTasks = myTasks.filter((task) => task.priority === "high" && task.status !== "completed")
+
+  const assignedCustomerIds = [...new Set(myTasks.map((task) => task.customerId))]
+  const accessibleCustomers = mockCustomers.filter((customer) => assignedCustomerIds.includes(customer.id))
+
+  const boxFiles = accessibleCustomers.map((customer) => ({
+    customer,
+    files: mockFiles.filter((file) => file.customerId === customer.id),
+    totalSize: mockFiles.filter((file) => file.customerId === customer.id).reduce((sum, file) => sum + file.size, 0),
+  }))
+
+  const filteredBoxFiles = boxFiles.filter(
+    (boxFile) =>
+      boxFile.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      boxFile.files.some((file) => file.name.toLowerCase().includes(searchTerm.toLowerCase())),
+  )
 
   const notifications = [
     ...urgentTasks.map((task) => ({
@@ -69,237 +110,295 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
     }))
   }
 
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return "0 Bytes"
+    const k = 1024
+    const sizes = ["Bytes", "KB", "MB", "GB"]
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
+  }
+
+  const getFileIcon = (type: string) => {
+    if (type.includes("image")) return <ImageIcon className="h-4 w-4" />
+    if (type.includes("pdf")) return <FileText className="h-4 w-4" />
+    if (type.includes("zip") || type.includes("archive")) return <Archive className="h-4 w-4" />
+    return <FileText className="h-4 w-4" />
+  }
+
+  const sidebarItems = [
+    { id: "overview", label: "Overview", icon: Home },
+    { id: "tasks", label: "My Tasks", icon: CheckCircle2 },
+    { id: "files", label: "Box Files", icon: Folder },
+    { id: "notifications", label: "Notifications", icon: Bell },
+  ]
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card">
-        <div className="flex items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold text-card-foreground">Employee Dashboard</h1>
-            <Badge variant="outline">Employee</Badge>
-          </div>
-          <div className="flex items-center gap-4">
-            <Button
-              variant="outline"
-              size="sm"
-              className="bg-transparent relative"
-              onClick={() => setShowNotifications(!showNotifications)}
-            >
-              <Bell className="h-4 w-4 mr-2" />
-              Notifications
-              {urgentTasks.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                  {urgentTasks.length}
-                </span>
-              )}
+    <div className="min-h-screen bg-background flex">
+      <aside className={`${sidebarOpen ? "w-64" : "w-16"} bg-card border-r transition-all duration-300 flex flex-col`}>
+        <div className="p-4 border-b">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2">
+              <Menu className="h-4 w-4" />
             </Button>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Welcome, {user.name}</span>
-              <Button variant="outline" size="sm" onClick={onLogout} className="bg-transparent">
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
-              </Button>
-            </div>
+            {sidebarOpen && (
+              <div>
+                <h2 className="font-semibold text-card-foreground">Employee Portal</h2>
+                <p className="text-xs text-muted-foreground">{user.name}</p>
+              </div>
+            )}
           </div>
         </div>
 
-        {showNotifications && (
-          <div className="absolute right-6 top-16 w-80 bg-card border rounded-lg shadow-lg z-50">
-            <div className="p-4 border-b">
-              <h3 className="font-semibold">Notifications</h3>
-            </div>
-            <div className="max-h-96 overflow-y-auto">
-              {notifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  className={`p-4 border-b hover:bg-muted ${notification.type === "urgent" ? "bg-red-50 border-l-4 border-l-red-500" : ""}`}
+        <nav className="flex-1 p-2">
+          <div className="space-y-1">
+            {sidebarItems.map((item) => {
+              const Icon = item.icon
+              return (
+                <Button
+                  key={item.id}
+                  variant={activeTab === item.id ? "secondary" : "ghost"}
+                  className={`w-full justify-start gap-3 ${!sidebarOpen && "px-2"}`}
+                  onClick={() => setActiveTab(item.id)}
                 >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="font-medium text-sm">{notification.title}</p>
-                      <p className="text-sm text-muted-foreground">{notification.message}</p>
-                    </div>
-                    <span className="text-xs text-muted-foreground">{notification.time}</span>
-                  </div>
-                </div>
-              ))}
+                  <Icon className="h-4 w-4" />
+                  {sidebarOpen && <span>{item.label}</span>}
+                </Button>
+              )
+            })}
+          </div>
+        </nav>
+
+        <div className="p-2 border-t">
+          <Button
+            variant="ghost"
+            className={`w-full justify-start gap-3 text-red-600 hover:text-red-700 hover:bg-red-50 ${!sidebarOpen && "px-2"}`}
+            onClick={onLogout}
+          >
+            <LogOut className="h-4 w-4" />
+            {sidebarOpen && <span>Logout</span>}
+          </Button>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col">
+        <header className="border-b bg-card">
+          <div className="flex items-center justify-between px-6 py-4">
+            <div className="flex items-center gap-4">
+              <h1 className="text-2xl font-bold text-card-foreground">Employee Dashboard</h1>
+              <Badge variant="outline">Employee</Badge>
+            </div>
+            <div className="flex items-center gap-4">
+              <Button
+                variant="outline"
+                size="sm"
+                className="bg-transparent relative"
+                onClick={() => setShowNotifications(!showNotifications)}
+              >
+                <Bell className="h-4 w-4 mr-2" />
+                Notifications
+                {urgentTasks.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {urgentTasks.length}
+                  </span>
+                )}
+              </Button>
             </div>
           </div>
-        )}
-      </header>
 
-      <div className="p-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview">My Overview</TabsTrigger>
-            <TabsTrigger value="tasks">My Tasks</TabsTrigger>
-            <TabsTrigger value="files">Box Files</TabsTrigger>
-            <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="overview" className="space-y-6">
-            {/* Task Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Pending Tasks</CardTitle>
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-orange-600">{pendingTasks.length}</div>
-                  <p className="text-xs text-muted-foreground">Awaiting start</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">In Progress</CardTitle>
-                  <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-primary">{inProgressTasks.length}</div>
-                  <p className="text-xs text-muted-foreground">Currently working</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Completed</CardTitle>
-                  <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-secondary">{completedTasks.length}</div>
-                  <p className="text-xs text-muted-foreground">This month</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Overdue</CardTitle>
-                  <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-red-600">{overdueTasks.length}</div>
-                  <p className="text-xs text-muted-foreground">Need attention</p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Current Tasks & Upcoming Deadlines */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Current Tasks</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {inProgressTasks.length > 0 ? (
-                    inProgressTasks.slice(0, 3).map((task) => (
-                      <div
-                        key={task.id}
-                        className="p-4 bg-muted rounded-lg cursor-pointer hover:bg-muted/80"
-                        onClick={() => setFocusedTask(task)}
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-medium">{task.title}</h4>
-                          <Badge className="bg-primary text-primary-foreground">{task.priority}</Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground mb-3">{task.description}</p>
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span>Progress</span>
-                            <span>{task.progress}%</span>
-                          </div>
-                          <Progress value={task.progress} className="h-2" />
-                        </div>
-                        <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            Due: {new Date(task.dueDate).toLocaleDateString()}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <span>Customer {task.customerId}</span>
-                          </span>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-center text-muted-foreground py-8">No tasks in progress</p>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5 text-orange-600" />
-                    Upcoming Deadlines
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {myTasks
-                    .filter((task) => task.status !== "completed")
-                    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
-                    .slice(0, 4)
-                    .map((task) => {
-                      const daysUntilDue = Math.ceil(
-                        (new Date(task.dueDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24),
-                      )
-                      const isOverdue = daysUntilDue < 0
-                      const isDueSoon = daysUntilDue <= 3 && daysUntilDue >= 0
-
-                      return (
-                        <div key={task.id} className="flex items-center gap-4 p-3 bg-muted rounded-lg">
-                          <div
-                            className={`w-2 h-2 rounded-full ${
-                              isOverdue ? "bg-red-600" : isDueSoon ? "bg-orange-600" : "bg-secondary"
-                            }`}
-                          ></div>
-                          <div className="flex-1">
-                            <p className="text-sm font-medium">{task.title}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {isOverdue ? `${Math.abs(daysUntilDue)} days overdue` : `Due in ${daysUntilDue} days`}
-                            </p>
-                          </div>
-                          <Badge variant={task.priority === "high" ? "destructive" : "outline"}>{task.priority}</Badge>
-                        </div>
-                      )
-                    })}
-                  {myTasks.filter((task) => task.status !== "completed").length === 0 && (
-                    <p className="text-center text-muted-foreground py-8">No upcoming deadlines</p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Quick Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Button className="h-20 flex flex-col gap-2" onClick={() => setActiveTab("tasks")}>
-                    <CheckCircle2 className="h-6 w-6" />
-                    View All Tasks
-                  </Button>
-                  <Button variant="outline" className="h-20 flex flex-col gap-2 bg-transparent">
-                    <Calendar className="h-6 w-6" />
-                    Schedule Meeting
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="h-20 flex flex-col gap-2 bg-transparent"
-                    onClick={() => setActiveTab("files")}
+          {showNotifications && (
+            <div className="absolute right-6 top-16 w-80 bg-card border rounded-lg shadow-lg z-50">
+              <div className="p-4 border-b">
+                <h3 className="font-semibold">Notifications</h3>
+              </div>
+              <div className="max-h-96 overflow-y-auto">
+                {notifications.map((notification) => (
+                  <div
+                    key={notification.id}
+                    className={`p-4 border-b hover:bg-muted ${notification.type === "urgent" ? "bg-red-50 border-l-4 border-l-red-500" : ""}`}
                   >
-                    <FileText className="h-6 w-6" />
-                    Upload Document
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-medium text-sm">{notification.title}</p>
+                        <p className="text-sm text-muted-foreground">{notification.message}</p>
+                      </div>
+                      <span className="text-xs text-muted-foreground">{notification.time}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </header>
 
-          <TabsContent value="tasks">
+        <div className="flex-1 p-6">
+          {activeTab === "overview" && (
+            <div className="space-y-6">
+              {/* Task Summary Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Pending Tasks</CardTitle>
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-orange-600">{pendingTasks.length}</div>
+                    <p className="text-xs text-muted-foreground">Awaiting start</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">In Progress</CardTitle>
+                    <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-primary">{inProgressTasks.length}</div>
+                    <p className="text-xs text-muted-foreground">Currently working</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Completed</CardTitle>
+                    <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-secondary">{completedTasks.length}</div>
+                    <p className="text-xs text-muted-foreground">This month</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Overdue</CardTitle>
+                    <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-red-600">{overdueTasks.length}</div>
+                    <p className="text-xs text-muted-foreground">Need attention</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Current Tasks & Upcoming Deadlines */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Current Tasks</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {inProgressTasks.length > 0 ? (
+                      inProgressTasks.slice(0, 3).map((task) => (
+                        <div
+                          key={task.id}
+                          className="p-4 bg-muted rounded-lg cursor-pointer hover:bg-muted/80"
+                          onClick={() => setFocusedTask(task)}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="font-medium">{task.title}</h4>
+                            <Badge className="bg-primary text-primary-foreground">{task.priority}</Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-3">{task.description}</p>
+                          <div className="space-y-2">
+                            <div className="flex justify-between text-sm">
+                              <span>Progress</span>
+                              <span>{task.progress}%</span>
+                            </div>
+                            <Progress value={task.progress} className="h-2" />
+                          </div>
+                          <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              Due: {new Date(task.dueDate).toLocaleDateString()}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <span>Customer {task.customerId}</span>
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-center text-muted-foreground py-8">No tasks in progress</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <AlertTriangle className="h-5 w-5 text-orange-600" />
+                      Upcoming Deadlines
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {myTasks
+                      .filter((task) => task.status !== "completed")
+                      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+                      .slice(0, 4)
+                      .map((task) => {
+                        const daysUntilDue = Math.ceil(
+                          (new Date(task.dueDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24),
+                        )
+                        const isOverdue = daysUntilDue < 0
+                        const isDueSoon = daysUntilDue <= 3 && daysUntilDue >= 0
+
+                        return (
+                          <div key={task.id} className="flex items-center gap-4 p-3 bg-muted rounded-lg">
+                            <div
+                              className={`w-2 h-2 rounded-full ${
+                                isOverdue ? "bg-red-600" : isDueSoon ? "bg-orange-600" : "bg-secondary"
+                              }`}
+                            ></div>
+                            <div className="flex-1">
+                              <p className="text-sm font-medium">{task.title}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {isOverdue ? `${Math.abs(daysUntilDue)} days overdue` : `Due in ${daysUntilDue} days`}
+                              </p>
+                            </div>
+                            <Badge variant={task.priority === "high" ? "destructive" : "outline"}>
+                              {task.priority}
+                            </Badge>
+                          </div>
+                        )
+                      })}
+                    {myTasks.filter((task) => task.status !== "completed").length === 0 && (
+                      <p className="text-center text-muted-foreground py-8">No upcoming deadlines</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Quick Actions */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Quick Actions</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Button className="h-20 flex flex-col gap-2" onClick={() => setActiveTab("tasks")}>
+                      <CheckCircle2 className="h-6 w-6" />
+                      View All Tasks
+                    </Button>
+                    <Button variant="outline" className="h-20 flex flex-col gap-2 bg-transparent">
+                      <Calendar className="h-6 w-6" />
+                      Schedule Meeting
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="h-20 flex flex-col gap-2 bg-transparent"
+                      onClick={() => setActiveTab("files")}
+                    >
+                      <FileText className="h-6 w-6" />
+                      Upload Document
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {activeTab === "tasks" && (
             <div className="space-y-6">
               <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold">My Tasks</h2>
@@ -356,13 +455,154 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                 ))}
               </div>
             </div>
-          </TabsContent>
+          )}
 
-          <TabsContent value="files">
-            <FileManagement showCustomerInfo={true} />
-          </TabsContent>
+          {activeTab === "files" && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-card-foreground">Box Files</h2>
+                  <p className="text-muted-foreground">Access customer documents from your assigned tasks</p>
+                </div>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button className="bg-primary hover:bg-primary/90">
+                      <Upload className="h-4 w-4 mr-2" />
+                      Upload Files
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                      <DialogTitle>Upload Files to Box File</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="boxfile-select">Select Box File</Label>
+                        <Select value={selectedBoxFile} onValueChange={setSelectedBoxFile}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Choose a customer's box file..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {accessibleCustomers.map((customer) => (
+                              <SelectItem key={customer.id} value={customer.id}>
+                                {customer.name} - {customer.email}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {selectedBoxFile && (
+                        <FileUpload onUpload={(files) => console.log("Files uploaded to:", selectedBoxFile, files)} />
+                      )}
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
 
-          <TabsContent value="notifications">
+              {/* Search */}
+              <div className="flex items-center gap-4">
+                <div className="relative flex-1 max-w-md">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search customers or files..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                <Badge variant="outline" className="text-sm">
+                  {filteredBoxFiles.length} Accessible Box Files
+                </Badge>
+              </div>
+
+              {/* Box Files Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredBoxFiles.map((boxFile) => (
+                  <Card key={boxFile.customer.id} className="hover:shadow-md transition-shadow">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <FolderOpen className="h-5 w-5 text-primary" />
+                          <div>
+                            <CardTitle className="text-lg">{boxFile.customer.name}</CardTitle>
+                            <p className="text-sm text-muted-foreground">{boxFile.customer.email}</p>
+                          </div>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem>
+                              <Eye className="h-4 w-4 mr-2" />
+                              View All Files
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Files: {boxFile.files.length}</span>
+                        <span className="text-muted-foreground">Size: {formatFileSize(boxFile.totalSize)}</span>
+                      </div>
+
+                      {/* Recent Files Preview */}
+                      <div className="space-y-2">
+                        <h4 className="text-sm font-medium">Recent Files</h4>
+                        {boxFile.files.slice(0, 3).map((file) => (
+                          <div key={file.id} className="flex items-center gap-3 p-2 bg-muted rounded-lg">
+                            {getFileIcon(file.type)}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{file.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {formatFileSize(file.size)} • {new Date(file.uploadedAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Button variant="ghost" size="sm" onClick={() => setViewingFile(file)}>
+                                <Eye className="h-3 w-3" />
+                              </Button>
+                              <Button variant="ghost" size="sm">
+                                <Download className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                        {boxFile.files.length > 3 && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full bg-transparent"
+                            onClick={() => setSelectedCustomer(boxFile.customer.id)}
+                          >
+                            View All {boxFile.files.length} Files
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {filteredBoxFiles.length === 0 && (
+                <Card>
+                  <CardContent className="text-center py-12">
+                    <FolderOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-medium mb-2">No Box Files Available</h3>
+                    <p className="text-muted-foreground">
+                      You don't have access to any customer box files yet. Box files are available based on your
+                      assigned tasks.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+
+          {activeTab === "notifications" && (
             <Card>
               <CardHeader>
                 <CardTitle>All Notifications</CardTitle>
@@ -386,9 +626,57 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
+          )}
+        </div>
       </div>
+
+      {/* File Viewer Dialog */}
+      {viewingFile && (
+        <Dialog open={!!viewingFile} onOpenChange={() => setViewingFile(null)}>
+          <DialogContent className="max-w-4xl max-h-[80vh]">
+            <DialogHeader>
+              <DialogTitle>{viewingFile.name}</DialogTitle>
+            </DialogHeader>
+            <FileViewer file={viewingFile} />
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Detailed Customer Files Dialog */}
+      {selectedCustomer && (
+        <Dialog open={!!selectedCustomer} onOpenChange={() => setSelectedCustomer(null)}>
+          <DialogContent className="max-w-4xl max-h-[80vh]">
+            <DialogHeader>
+              <DialogTitle>{mockCustomers.find((c) => c.id === selectedCustomer)?.name} - Box File</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+              {mockFiles
+                .filter((file) => file.customerId === selectedCustomer)
+                .map((file) => (
+                  <div key={file.id} className="flex items-center gap-4 p-3 border rounded-lg">
+                    {getFileIcon(file.type)}
+                    <div className="flex-1">
+                      <p className="font-medium">{file.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {formatFileSize(file.size)} • {new Date(file.uploadedAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setViewingFile(file)}>
+                        <Eye className="h-4 w-4 mr-2" />
+                        View
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <Download className="h-4 w-4 mr-2" />
+                        Download
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {focusedTask && (
         <Dialog open={!!focusedTask} onOpenChange={() => setFocusedTask(null)}>
